@@ -1,6 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
-from .models import Cat
+from django.views.generic import ListView, DetailView
+from .models import Cat, Toy
+from .forms import FeedingForm
 
 
 # Create your views here.
@@ -21,7 +23,6 @@ def about(request):
 
 def cats_index(request):
     cats = Cat.objects.all()
-    # We pass data to a template very much like we did in Express!
     return render(request, 'cats/index.html', {
         'cats': cats
     })
@@ -29,7 +30,12 @@ def cats_index(request):
 
 def cats_detail(request, cat_id):
     cat = Cat.objects.get(id=cat_id)
-    return render(request, 'cats/detail.html', {'cat': cat})
+    cat = Cat.objects.get(id=cat_id)
+
+    feeding_form = FeedingForm()
+    return render(request, 'cats/detail.html', {
+        'cat': cat, 'feeding_form': feeding_form
+    })
 
 
 class CatCreate(CreateView):
@@ -45,3 +51,37 @@ class CatUpdate(UpdateView):
 class CatDelete(DeleteView):
     model = Cat
     success_url = '/cats'
+
+
+def add_feeding(request, cat_id):
+    form = FeedingForm(request.POST)
+    if form.is_valid():
+        # don't save the form to the db until it
+        # has the cat_id assigned
+        new_feeding = form.save(commit=False)
+        new_feeding.cat_id = cat_id
+        new_feeding.save()
+    return redirect('detail', cat_id=cat_id)
+
+
+class ToyList(ListView):
+    model = Toy
+
+
+class ToyDetail(DetailView):
+    model = Toy
+
+
+class ToyCreate(CreateView):
+    model = Toy
+    fields = '__all__'
+
+
+class ToyUpdate(UpdateView):
+    model = Toy
+    fields = ['name', 'color']
+
+
+class ToyDelete(DeleteView):
+    model = Toy
+    success_url = '/toys'
